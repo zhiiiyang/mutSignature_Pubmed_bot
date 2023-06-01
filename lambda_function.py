@@ -1,7 +1,6 @@
 import json
 import tweepy
-from datetime import date
-from datetime import timedelta 
+import datetime
 from pymed import PubMed
 import os
 
@@ -12,21 +11,24 @@ def lambda_handler(event, context):
   }
 
 def retweet_pubmed_bot():
-  auth = tweepy.OAuthHandler(os.environ['api_key'], os.environ['api_secret_key'])
-  auth.set_access_token(os.environ['access_token'], os.environ['access_token_secret'])
+  auth = tweepy.OAuth1UserHandler(
+    os.environ['api_key'], os.environ['api_key_secret'],
+    os.environ['access_token'], os.environ['access_token_key']
+  )
   api = tweepy.API(auth)
-  timeline = api.user_timeline("mutsignatures", count = 100)
+  timeline = api.user_timeline(user_id="mutsignatures", count = 100)
   id_strs = []
   for status in timeline:
-      if 'RT @' in status.text:
-          id_strs.append(status.retweeted_status.id)
-  yesterday = date.today()- timedelta(days = 1)
+    if 'RT @' in status.text:
+        id_strs.append(status.retweeted_status.id)
   search_terms = ['#MutationalSignatures','#MutationalSignature', 'mutational signatures', 'mutational signature']
-  for i in range(len(search_terms)):
-      for status in tweepy.Cursor(api.search, q = search_terms[i], lang = "en", since = yesterday).items(100):
-          if status.id not in id_strs and status.author.name != "mutational signatures twitbot" and 'RT @' not in status.text:
-              #print(status.id)
-              api.retweet(status.id)
+  yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days = 1)
+  
+  for search_term in search_terms:
+    tweets=api.search_tweets(search_term, count=10, lang="en")
+    for tweet in tweets:
+      if tweet.id not in id_strs and tweet.author.name != "mutational signatures twitbot" and 'RT @' not in tweet.text:
+        api.retweet(tweet.id)
               
   #pubmed twitter            
   pubmed = PubMed(tool="MyApp", email="zhiyang@usc.edu")
