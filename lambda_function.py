@@ -24,19 +24,19 @@ def retweet_pubmed_bot():
   search_terms = ['#MutationalSignatures','#MutationalSignature', 'mutational signatures', 'mutational signature']
 
   for search_term in search_terms:
-    tweets=api.search_tweets(search_term, count=5, lang="en")
+    tweets=api.search_tweets(search_term, count=50, lang="en")
     for tweet in tweets:
       if tweet.id not in id_strs and tweet.author.name != "mutational signatures twitbot" and 'RT @' not in tweet.text:
         api.retweet(tweet.id)
               
   #pubmed twitter            
   pubmed = PubMed(tool="MyApp", email="zhiyang@usc.edu")
-  results = pubmed.query('\"mutational signature\" AND (("2020/01/01"[Date - Create] : "3000"[Date - Create]))', max_results=5)
+  results = pubmed.query('\"mutational signature\" AND (("2020/01/01"[Date - Create] : "3000"[Date - Create]))', max_results=3)
   # Loop over the retrieved articles
   keyword = "mutational signature"
   tweets_text = [i.text for i in timeline] 
   for article in results:
     if all(article.title not in substring for substring in tweets_text):
         #print(result.title + + "https://doi.org/" + result.doi)
-        print((article.title[:(140-4-len("https://doi.org/" + article.doi))] + "... https://doi.org/" + article.doi))
+        api.update_status((article.title[:(140-4-len("https://doi.org/" + article.doi))] + "... https://doi.org/" + article.doi))
         break
